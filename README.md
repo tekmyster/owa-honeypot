@@ -1,46 +1,41 @@
 # owa-honeypot
 
-A Flask-based Outlook Web Access (OWA) honeypot, T-Pot friendly, with ELK integration and enriched JSON logging.
+A Flask-based Outlook Web Access (OWA) honeypot, T-Pot friendly, with ELK integration and structured JSON logging.
 
 ---
 
-![OWA Honeypot Login (Blank)](docs/OWA_honeypot_1.png)
+![OWA Honeypot Base Screen](docs/OWA_honeypot_1.png)
 
-## What’s New in v1.0.1
+## What’s New in v1.1.0
 
 * **ELK Stack Integration**
-  Send structured JSON logs directly to Elasticsearch via env vars: `REMOTE_ELK_ENABLE`, `ELK_URL`, `ELK_USER`, `ELK_PASS`, `ELK_INDEX`, `ELK_USE_SSL`.
-* **Rich JSON Logging**
+  Stream structured JSON logs to Elasticsearch via env vars: `REMOTE_ELK_ENABLE`, `ELK_URL`, `ELK_USER`, `ELK_PASS`, `ELK_INDEX`, `ELK_USE_SSL`.
+* **Structured JSON Logging**
   Powered by `pythonjsonlogger`, capturing `@timestamp`, `client_ip`, `method`, `uri_path`, `user_agent`, and more.
-  Logs to stdout (for Filebeat/T-Pot) **and** a local `dumpass.log` file.
-* **Modular Flask App**
-  Factory pattern (`create_app()`) for easy testing & extension.
-  Central `log_event()` helper unifies form- and Basic-auth captures.
-  Stubbed `detect_exploit()` ready for custom signature/threshold detection.
-* **Realistic IIS/ASP.NET Headers**
-  Responses include `Server: Microsoft-IIS/7.5` and `X-Powered-By: ASP.NET` to fool scanners.
-* **Comprehensive Endpoint Coverage**
-  Over 20 common OWA/Exchange routes (EWS, Autodiscover, OAB, PowerShell, etc.) all funnel into the fake login.
-* **Custom Error Pages**
-  Handlers for 401, 403, and 404 that log then serve your own templates (`401.html`, `403.html`, `404.html`).
+  Logs to stdout and a local `dumpass.log` file for offline review.
+* **Modular Flask Architecture**
+  Factory pattern (`create_app()`) for extensibility and testing.
+  Central `log_event()` helper abstracts form- and Basic-auth logging.
+  Stubbed `detect_exploit()` for future signature- or threshold-based detection.
+* **Realistic IIS/ASP.NET Emulation**
+  Responses include `Server: Microsoft-IIS/7.5` and `X-Powered-By: ASP.NET` headers.
+  Custom 401, 403, and 404 pages log and serve your own templates.
+* **Comprehensive OWA Endpoint Coverage**
+  Over 20 common Exchange/OWA routes (EWS, Autodiscover, OAB, PowerShell, etc.).
 * **Secure Defaults & Cleanup**
-  Overwrites `dumpass.log` on startup to avoid leaking old credentials.
-  Uses Flask’s `instance_path` for config isolation.
-* **Copy-Paste Friendly Setup**
-  Single Python script—no external templates beyond static assets.
-  Fully driven by environment variables (no hard-coded credentials).
+  Overwrites `dumpass.log` on startup and isolates config in Flask’s `instance_path`.
 
 ---
 
 ## Features
 
-* Structured JSON logging via `pythonjsonlogger`
-* ELK/Elastic integration for real-time monitoring
-* Flask factory architecture for modularity
-* IIS/ASP.NET emulation (headers & error pages)
-* Faux login page capturing credentials
-* Stub for custom exploit/threshold detection
-* Config isolation & secure defaults
+* Stream to ELK/Elastic for real-time analysis
+* Detailed JSON event logging
+* Flexible Flask factory pattern
+* Emulated Exchange headers & errors
+* Single-file Python script, env-driven
+* Stub for custom exploit detection
+* Secure-by-default logging and config isolation
 
 ---
 
@@ -68,7 +63,7 @@ Copy your `.env` file into `/opt/owa-honeypot/.env` (see **Configuration**).
 
 ## Configuration
 
-Create a `.env` at the project root:
+Create a `.env` in the project root:
 
 ```dotenv
 # Flask settings
@@ -76,7 +71,7 @@ FLASK_APP=owa_pot.py
 FLASK_ENV=production
 PORT=80
 
-# Local dumpass log
+# Local log file
 DUMPASS_LOG=./dumpass.log
 
 # ELK integration
@@ -90,39 +85,35 @@ ELK_USE_SSL=true
 
 ---
 
-## Usage
+## Usage & Screenshots
 
-### Live Output
+### Screenshot Legend
 
-![Console Log Output](docs/OWA_honeypot_0.png)
+| # | Description              | Image                                             |
+| - | ------------------------ | ------------------------------------------------- |
+| 0 | Console output           | ![Console Output](docs/OWA_honeypot_0.png)        |
+| 1 | First load / Base screen | ![Base Screen](docs/OWA_honeypot_1.png)           |
+| 2 | Incorrect user/password  | ![Incorrect Credentials](docs/OWA_honeypot_2.png) |
+| 3 | No password entered      | ![No Password](docs/OWA_honeypot_3.png)           |
+| 4 | No username entered      | ![No Username](docs/OWA_honeypot_4.png)           |
+| 5 | JSON log output          | ![Log Output](docs/OWA_honeypot_5.png)            |
 
-### Login Page Behavior
-
-1. **Blank login page**
-   ![Blank Login Page](docs/OWA_honeypot_1.png)
-2. **Username entered** (no password)
-   ![Username Entered](docs/OWA_honeypot_2.png)
-3. **Password missing** (with username)
-   ![Password Missing](docs/OWA_honeypot_3.png)
-4. **Username missing** (password only)
-   ![Username Missing](docs/OWA_honeypot_4.png)
-
-Run the app:
+#### Run the App
 
 ```bash
-# From your virtual environment
+# Activate venv, then:
 python owa_pot.py
 ```
 
-> **Tip:** Run behind a TLS-terminating proxy (e.g. Nginx) on port 443.
+> **Tip:** Place this behind a TLS-terminating proxy (e.g. Nginx, Traefik) on port 443.
 
 ---
 
 ## Debian/Ubuntu Service Setup
 
-Run owa-honeypot as a systemd service, with nightly restart at 3 AM.
+Run owa-honeypot as a systemd service, with a nightly 3 AM restart.
 
-### 1. Install Prerequisites
+### 1. Install Dependencies
 
 ```bash
 sudo apt update
@@ -138,7 +129,7 @@ deactivate
 
 Copy your `.env` to `/opt/owa-honeypot/.env`.
 
-### 2. Create systemd Service
+### 2. Create `owa-honeypot.service`
 
 `/etc/systemd/system/owa-honeypot.service`:
 
@@ -161,13 +152,13 @@ RestartSec=5s
 WantedBy=multi-user.target
 ```
 
-### 3. Nightly Restart Timer
+### 3. Create Nightly Restart Timer
 
 `/etc/systemd/system/owa-honeypot-restart.timer`:
 
 ```ini
 [Unit]
-Description=Nightly restart of OWA Honeypot
+Description=Nightly OWA Honeypot Restart
 
 [Timer]
 OnCalendar=*-*-* 03:00:00
@@ -188,7 +179,7 @@ Type=oneshot
 ExecStart=/bin/systemctl restart owa-honeypot.service
 ```
 
-### 4. Enable & Start
+### 4. Enable & Verify
 
 ```bash
 sudo systemctl daemon-reload
@@ -202,27 +193,33 @@ sudo systemctl list-timers owa-honeypot-restart.timer
 
 ## Security & Best Practices
 
-1. **Rate-Limit Auth** – use Flask-Limiter to thwart brute-force.
-2. **Enforce TLS** – terminate HTTPS at a proxy.
-3. **Protect & Rotate Secrets** – vault/store ELK creds securely.
-4. **Threshold Alerts** – extend `detect_exploit()` for anomalies.
+1. **Rate-Limit Auth Endpoints** – use Flask-Limiter.
+2. **Enforce HTTPS** – terminate TLS at a proxy.
+3. **Secure & Rotate Secrets** – vault your ELK credentials.
+4. **Threshold-Based Alerts** – extend `detect_exploit()` for anomalies.
 5. **Log Retention** – use `logrotate` on `dumpass.log`.
 
 ---
 
-## Upgrading from v1.0
+## Upgrading from v1.0.x
 
-1. Backup `dumpass.log`.
-2. Pull latest & reinstall:
+1. Backup your existing `dumpass.log`.
+
+2. Pull the latest and reinstall dependencies:
 
    ```bash
    git pull origin master
    pip install -r requirements.txt
    ```
-3. Restart the service.
+
+3. Restart the service:
+
+   ```bash
+   sudo systemctl restart owa-honeypot.service
+   ```
 
 ---
 
 ## License
 
-Apache 2.0 © 2025 TekMyster
+Apache 2.0 © 2025 TekMyster
