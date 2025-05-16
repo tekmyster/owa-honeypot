@@ -6,7 +6,7 @@ A Flask-based Outlook Web Access (OWA) honeypot, T-Pot friendly, with ELK integr
 
 ![OWA Honeypot Login (Blank)](docs/OWA_honeypot_1.png)
 
-## What’s New in v1.1.0
+## What’s New in v1.0.1
 
 * **ELK Stack Integration**
   Send structured JSON logs directly to Elasticsearch via env vars: `REMOTE_ELK_ENABLE`, `ELK_URL`, `ELK_USER`, `ELK_PASS`, `ELK_INDEX`, `ELK_USE_SSL`.
@@ -210,7 +210,7 @@ sudo systemctl list-timers owa-honeypot-restart.timer
 
 ---
 
-## Upgrading from v1.0.x
+## Upgrading from v1.0
 
 1. Backup `dumpass.log`.
 2. Pull latest & reinstall:
